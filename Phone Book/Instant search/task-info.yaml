@@ -1,0 +1,239 @@
+type: edu
+custom_name: stage4
+files:
+- name: src/phonebook/Main.java
+  visible: true
+  text: |
+    package phonebook;
+
+    public class Main {
+        public static void main(String[] args) {
+            System.out.println("Hello World!");
+        }
+    }
+  learner_created: false
+- name: test/PhoneBookTest.java
+  visible: false
+  text: "import org.hyperskill.hstest.stage.StageTest;\nimport org.hyperskill.hstest.testcase.CheckResult;\n\
+    import org.hyperskill.hstest.testcase.TestCase;\nimport phonebook.Main;\n\nimport\
+    \ java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\nimport\
+    \ java.util.regex.Matcher;\nimport java.util.regex.Pattern;\n\npublic class PhoneBookTest\
+    \ extends StageTest {\n    public PhoneBookTest() {\n        super(Main.class);\n\
+    \    }\n    \n    private long timeOnTestStart;\n    \n    @Override\n    public\
+    \ List<TestCase> generate() {\n        timeOnTestStart = System.currentTimeMillis();\n\
+    \        return Arrays.asList(\n            new TestCase().setTimeLimit(30 * 60\
+    \ * 1000)\n        );\n    }\n    \n    \n    private CheckResult checkPhrases(String\
+    \ reply, String... phrases) {\n        reply = reply.toLowerCase();\n        for\
+    \ (String phrase : phrases) {\n            if (!reply.contains(phrase.toLowerCase()))\
+    \ {\n                return CheckResult.wrong(\"Not found the part `\" + phrase\
+    \ + \"` in your output.\");\n            }\n        }\n        return CheckResult.correct();\n\
+    \    }\n    \n    private List<String> findAll(String reply, String regex) {\n\
+    \        Matcher matcher = Pattern.compile(regex).matcher(reply);\n        List<String>\
+    \ groups = new ArrayList<>();\n        while (matcher.find()) {\n            groups.add(matcher.group());\n\
+    \        }\n        return groups;\n    }\n    \n    private String timeRegex\
+    \ = \"(\\\\d+)\\\\s*min.*?(\\\\d+)\\\\s*sec.*?(\\\\d+)\\\\s*ms\";\n    private\
+    \ Pattern timeRegexPattern = Pattern.compile(timeRegex);\n    \n    private long\
+    \ parseTimestamp(String timestamp) {\n        Matcher matcher = timeRegexPattern.matcher(timestamp);\n\
+    \        if (!matcher.matches() || matcher.groupCount() < 3) {\n            throw\
+    \ new IllegalStateException(\"???Not matches the line \" + timestamp);\n     \
+    \   }\n        int min = Integer.parseInt(matcher.group(1));\n        int sec\
+    \ = Integer.parseInt(matcher.group(2));\n        int ms = Integer.parseInt(matcher.group(3));\n\
+    \        return ms + sec * 1000 + min * 1000 * 60;\n    }\n    \n    \n    \n\
+    \    @Override\n    public CheckResult check(String reply, Object clue) {\n  \
+    \      long realTime = System.currentTimeMillis() - timeOnTestStart;\n       \
+    \ reply = reply.toLowerCase();\n        CheckResult res = checkPhrases(reply,\n\
+    \                \"found\",\n                \"min.\",\n                \"sec.\"\
+    ,\n                \"ms.\",\n                \"sorting time\",\n             \
+    \   \"searching time\",\n                \"linear search\",\n                \"\
+    bubble sort\",\n                \"jump search\",\n                \"quick sort\"\
+    ,\n                \"binary search\",\n                \"hash table\",\n     \
+    \           \"creating time\"\n        );\n        if (!res.isCorrect()) {\n \
+    \           return res;\n        }\n    \n        List<String> stat1 = findAll(reply,\
+    \ \"500 / 500\");\n        List<String> stat2 = findAll(reply, \"500/500\");\n\
+    \    \n        if (stat1.size() + stat2.size() < 4) {\n            return CheckResult.wrong(\"\
+    Your output should contain 4 times the phrase `500 / 500`\");\n        }\n   \
+    \ \n        List<String> timestamps = findAll(reply, timeRegex);\n        if (timestamps.size()\
+    \ != 10) {\n            return CheckResult.wrong(\"Your output should contain\
+    \ 10 timer outputs, but found \"\n                    + timestamps.size());\n\
+    \        }\n        // should not fail..\n        long t1 = parseTimestamp(timestamps.get(0));\n\
+    \        long t2 = parseTimestamp(timestamps.get(1));\n        long t3 = parseTimestamp(timestamps.get(2));\n\
+    \        long t4 = parseTimestamp(timestamps.get(3));\n        // qsort\n    \
+    \    long t5 = parseTimestamp(timestamps.get(4));\n        long t6 = parseTimestamp(timestamps.get(5));\n\
+    \        long t7 = parseTimestamp(timestamps.get(6));\n        // hash table\n\
+    \        long t8 = parseTimestamp(timestamps.get(7));\n        long t9 = parseTimestamp(timestamps.get(8));\n\
+    \        long t10 = parseTimestamp(timestamps.get(9));\n    \n        if (Math.abs(t3\
+    \ + t4 - t2) > 100) {\n            return CheckResult.wrong(\"Your third and fourth\
+    \ timer outputs in total (bubble sorting and searching) \" +\n               \
+    \     \"should be equal to the second (total search time).\");\n        }\n  \
+    \      if (Math.abs(t6 + t7 - t5) > 100) {\n            return CheckResult.wrong(\"\
+    Your 6-th and 7-th timer outputs in total (qsort and searching) \" +\n       \
+    \             \"should be equal to the 5-th (total search time).\");\n       \
+    \ }\n        if (Math.abs(t9 + t10 - t8) > 100) {\n            return CheckResult.wrong(\"\
+    Your 9-th and 10-th timer outputs in total (creating hashtable and searching)\
+    \ \" +\n                    \"should be equal to the 8-th (total search time).\"\
+    );\n        }\n    \n        long estimatedTime = t1 + t2 + t5 + t8;\n       \
+    \ if (realTime < 1000) {\n            return CheckResult.wrong(\"Your program\
+    \ completes too fast. Faster than a second!\");\n        }\n\n        if (Math.abs(estimatedTime\
+    \ - realTime) > estimatedTime * 0.3) {\n            return CheckResult.wrong(\"\
+    Your estimated time is not similar to real time the program works. \" +\n    \
+    \                \"Real time: \" + realTime + \"ms, estimated time: \" + estimatedTime\
+    \ + \"ms\");\n        }\n        \n        if (t8 >= t5) {\n            return\
+    \ CheckResult.wrong(\"Your hashtable works slower, than quick sort + binary search.\"\
+    );\n        }\n        return CheckResult.correct();\n    }\n}\n"
+  learner_created: false
+- name: src/phonebook/QuicksortBinary.java
+  visible: true
+  text: |+
+    package phonebook;
+
+    public class QuicksortBinary implements Algoritmo{
+        @Override
+        public void busqueda(String[] directorio, String[] personas) {
+            directorio = quickSort(directorio, 0, directorio.length - 1);
+            int con = 0;
+            for (int i = 0; i < personas.length; i++) {
+                int left = 0;
+                int right = directorio.length - 1;
+                while (left <= right) {
+                    int mid = left + (right - left) / 2; // the index of the middle element
+
+                    if (personas[i].equals(directorio[mid])) {
+                        con++;
+                        break;
+                    } else if (personas[i].compareTo(directorio[mid]) < 0) {
+                        right = mid - 1; // go to the left subarray
+                    } else {
+                        left = mid + 1;  // go the the right subarray
+                    }
+                }
+            }
+            System.out.printf("Found %d / %d entries. ", con, personas.length);
+        }
+        public static String[] quickSort(String[] array, int left, int right) {
+            if (left < right) {
+                int pivotIndex = partition(array, left, right); // the pivot is already on its place
+                quickSort(array, left, pivotIndex - 1);  // sort the left subarray
+                quickSort(array, pivotIndex + 1, right); // sort the right subarray
+            }
+            return array;
+
+        }
+        private static int partition(String[] array, int left, int right) {
+            String pivot = array[right];  // choose the rightmost element as the pivot
+            int partitionIndex = left; // the first element greater than the pivot
+
+            /* move large values into the right side of the array */
+            for (int i = left; i < right; i++) {
+                if (array[i].compareTo(pivot) <= -1) { // may be used '<' as well
+                    swap(array, i, partitionIndex);
+                    partitionIndex++;
+                }
+            }
+
+            swap(array, partitionIndex, right); // put the pivot on a suitable position
+
+            return partitionIndex;
+        }
+
+        private static void swap(String[] array, int i, int j) {
+            String temp = array[i];
+            array[i] = array[j];
+            array[j] = temp;
+        }
+    }
+
+  learner_created: true
+- name: src/phonebook/LinearSearch.java
+  visible: true
+  text: |
+    package phonebook;
+
+    public class LinearSearch implements Algoritmo{
+        @Override
+        public void busqueda(String[] directorio, String[] personas) {
+            int con = 0;
+            for (String dato : personas) {
+                for (String inf : directorio) {
+                    if (inf.equals(dato)) {
+                        con++;
+                        break;
+                    }
+                }
+            }
+            System.out.printf("Found %d / %d entries. ", con, personas.length);
+        }
+    }
+  learner_created: true
+- name: src/phonebook/Algoritmo.java
+  visible: true
+  text: |
+    package phonebook;
+
+    public interface Algoritmo {
+        void busqueda(String[] directorio, String[] personas);
+    }
+  learner_created: true
+- name: src/phonebook/ElegirBusqueda.java
+  visible: true
+  text: |
+    package phonebook;
+
+    public class ElegirBusqueda {
+        private Algoritmo algoritmo;
+
+        public void setMethod(Algoritmo algoritmo) {
+            this.algoritmo = algoritmo;
+        }
+
+        public void busqueda(String[] dato, String[] dato2) {
+            this.algoritmo.busqueda(dato, dato2);
+        }
+    }
+  learner_created: true
+- name: src/phonebook/BubbleSortJump.java
+  visible: true
+  text: |
+    package phonebook;
+
+    public class BubbleSortJump implements Algoritmo {
+        @Override
+        public void busqueda(String[] directorio, String[] personas) {
+            long time = System.currentTimeMillis();
+            long minutes = 0;
+
+            for (int i = 0; i < directorio.length - 1; i++) {
+                for (int j = 0; j < directorio.length - i - 1; j++) {
+                    if (directorio[j].compareTo(directorio[j + 1]) > 0) {
+                        String temp = directorio[j];
+                        directorio[j] = directorio[j + 1];
+                        directorio[j + 1] = temp;
+                    }
+                    long totalMilliseconds = System.currentTimeMillis() - time;
+                    minutes = (totalMilliseconds / 1000) / 60;
+                    if (minutes >= 1) {
+                        break;
+                    }
+                }
+                if (minutes >= 1) {
+                    break;
+                }
+            }
+        }
+    }
+  learner_created: true
+- name: src/phonebook/DatosArreglo.java
+  visible: true
+  learner_created: true
+- name: src/phonebook/HashTable.java
+  visible: true
+  learner_created: true
+- name: src/phonebook/BusquedaHash.java
+  visible: true
+  learner_created: true
+feedback_link: https://hyperskill.org/projects/63/stages/475/implement
+status: Solved
+feedback:
+  message: Congratulations! Continue on <a href="https://hyperskill.org/projects/63/stages/475/implement">JetBrains
+    Academy</a>
+  time: Sat, 05 Sep 2020 07:16:18 UTC
+record: -1
